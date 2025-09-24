@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>图片对比工具</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --background-color: #f5f5f5;
+            --text-color: #333;
+            --border-color: #ddd;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Arial', sans-serif; background-color: var(--background-color); color: var(--text-color); line-height: 1.6; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        .header-main { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 20px; }
+        .title-area { flex: 2; min-width: 250px; }
+        h1 { color: var(--primary-color); margin-bottom: 5px; }
+        p { font-size: 0.9em; color: #666; }
+
+        .language-selector { position: absolute; top: 20px; right: 20px; }
+        .language-selector select { padding: 5px; border-radius: 4px; border: 1px solid var(--border-color); }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; justify-content: center; }
+        .control-group { flex: 1; min-width: 300px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .input-group { margin-bottom: 10px; }
+        .input-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .input-group input[type="text"] { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; }
+        
+        .file-input-wrapper { display: flex; align-items: center; }
+        .custom-file-button {
+            background-color: #f0f0f0; color: var(--text-color); border: 1px solid var(--border-color);
+            padding: 5px 12px; border-radius: 4px; cursor: pointer; transition: background-color 0.3s;
+            white-space: nowrap;
+        }
+        .custom-file-button:hover { background-color: #e0e0e0; }
+        .file-name-display { margin-left: 10px; font-size: 0.9em; color: #777; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .view-mode { display: flex; justify-content: center; margin-bottom: 20px; }
+        .view-mode button { margin: 0 5px; background-color: var(--primary-color); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
+        .view-mode button:hover { background-color: #2980b9; }
+        .view-mode button.active { background-color: var(--secondary-color); }
+        .image-container { position: relative; width: 100%; height: 600px; background-color: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); cursor: move; touch-action: none; }
+        .side-by-side-mode { display: flex; height: 100%; }
+        .image-wrapper { position: relative; flex: 1; height: 100%; overflow: hidden; transition: box-shadow 0.3s; }
+        .image-wrapper.highlight { box-shadow: inset 0 0 0 4px var(--primary-color); }
+        .image-wrapper:first-child { border-right: 1px solid var(--border-color); }
+        .image-display, .overlap-image { position: absolute; top: 0; left: 0; transform-origin: 0 0; pointer-events: none; }
+        .overlap-mode { position: relative; width: 100%; height: 100%; overflow: hidden; }
+        
+        .overlap-image-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; clip-path: inset(0 0 0 50%); pointer-events: none; }
+        .slider-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .slider { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 4px; height: 100%; background-color: var(--primary-color); cursor: ew-resize; pointer-events: auto; }
+        .slider-handle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30px; height: 30px; background-color: var(--primary-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; }
+        
+        .info-box { background: white; padding: 10px 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex: 1; min-width: 220px; }
+        .info-box h3 { margin-bottom: 8px; color: var(--primary-color); font-size: 1em; }
+        .info-box ul { list-style-type: none; padding-left: 0; }
+        .info-box li { margin-bottom: 4px; font-size: 0.9em; }
+        .info-box kbd { background-color: #f1f1f1; border: 1px solid #ccc; border-radius: 3px; box-shadow: 0 1px 0 rgba(0,0,0,0.2); color: #333; display: inline-block; font-size: 0.85em; font-weight: bold; line-height: 1; padding: 2px 5px; white-space: nowrap; }
+        .no-image, .loading { display: flex; justify-content: center; align-items: center; height: 100%; color: #999; font-style: italic; }
+        .loading { color: var(--primary-color); font-weight: bold; }
+        
+        @media (max-width: 768px) {
+            .control-group { min-width: 100%; }
+            .image-container { height: 400px; }
+            .header-main { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="language-selector">
+            <select id="language-select">
+                <option value="zh" selected>中文</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+            </select>
+        </div>
+
+        <div class="header-main">
+            <div class="title-area">
+                <h1 data-i18n="title">图片对比工具</h1>
+                <p data-i18n="subtitle">加载两张图片进行对比分析</p>
+            </div>
+            
+            <div class="info-box">
+                <!-- [优化] 标题改为“操作说明” -->
+                <h3 data-i18n="operations">操作说明</h3>
+                <ul>
+                    <li><span data-i18n="leftClick">拖动 / 单指拖动</span>: <span data-i18n="pan">平移</span></li>
+                    <li><span data-i18n="mouseWheel">滚轮 / 双指捏合</span>: <span data-i18n="zoomInOut">缩放</span></li>
+                </ul>
+            </div>
+            
+            <div class="info-box">
+                <h3 data-i18n="shortcuts">快捷键</h3>
+                <ul>
+                    <li><kbd>空格</kbd>: <span data-i18n="toggleMode">切换模式</span></li>
+                    <li><kbd>R</kbd> / <span data-i18n="doubleClick">双击</span>: <span data-i18n="resetView">重置视图</span></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="controls">
+            <!-- ... control groups ... -->
+            <div class="control-group">
+                <div class="input-group">
+                    <label for="image1-url" data-i18n="loadImage1URL">加载图片 1 URL (回车加载):</label>
+                    <input type="text" id="image1-url" placeholder="https://example.com/image.jpg">
+                </div>
+                <div class="input-group">
+                    <label data-i18n="orSelectFile">或选择本地文件:</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="image1-file" accept="image/*" style="display: none;">
+                        <button type="button" class="custom-file-button" id="custom-btn-1" data-i18n="selectFile">选择文件</button>
+                        <span class="file-name-display" id="file-name-1" data-i18n="noFileChosen">未选择任何文件</span>
+                    </div>
+                </div>
+            </div>
+            <div class="control-group">
+                <div class="input-group">
+                    <label for="image2-url" data-i18n="loadImage2URL">加载图片 2 URL (回车加载):</label>
+                    <input type="text" id="image2-url" placeholder="https://example.com/image.jpg">
+                </div>
+                <div class="input-group">
+                    <label data-i18n="orSelectFile">或选择本地文件:</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="image2-file" accept="image/*" style="display: none;">
+                        <button type="button" class="custom-file-button" id="custom-btn-2" data-i18n="selectFile">选择文件</button>
+                        <span class="file-name-display" id="file-name-2" data-i18n="noFileChosen">未选择任何文件</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="view-mode">
+            <button id="side-by-side-btn" class="active" data-i18n="sideBySide">并排模式</button>
+            <button id="overlap-btn" data-i18n="overlap">重叠模式</button>
+            <button id="reset-view-btn" data-i18n="resetView">重置视图</button>
+        </div>
+
+        <div class="image-container" id="image-container">
+            <!-- ... image display areas ... -->
+            <div class="side-by-side-mode" id="side-by-side-mode">
+                <div class="image-wrapper" id="wrapper1">
+                    <div class="no-image" data-i18n="noImage">未加载图片 / 拖放图片到这里</div>
+                    <img class="image-display" id="image1-display" style="display: none;">
+                </div>
+                <div class="image-wrapper" id="wrapper2">
+                    <div class="no-image" data-i18n="noImage">未加载图片 / 拖放图片到这里</div>
+                    <img class="image-display" id="image2-display" style="display: none;">
+                </div>
+            </div>
+            <div class="overlap-mode" id="overlap-mode" style="display: none;">
+                <img class="overlap-image" id="image1-overlap">
+                <div class="overlap-image-wrapper" id="image2-wrapper">
+                    <img class="overlap-image" id="image2-overlap">
+                </div>
+                <div class="slider-container">
+                    <div class="slider" id="slider">
+                        <div class="slider-handle">↔</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const translations = {
+            'zh': {'title': '图片对比工具','subtitle': '加载两张图片进行对比分析','loadImage1URL': '加载图片 1 URL (回车加载):','loadImage2URL': '加载图片 2 URL (回车加载):','orSelectFile': '或选择本地文件:','selectFile': '选择文件','noFileChosen': '未选择任何文件','sideBySide': '并排模式','overlap': '重叠模式','resetView': '重置视图','noImage': '未加载图片 / 拖放图片到这里','operations': '操作说明','shortcuts': '快捷键','toggleMode': '切换模式','mouseWheel': '滚轮 / 双指捏合','zoomInOut': '缩放','leftClick': '拖动 / 单指拖动','pan': '平移','doubleClick': '双击','loading': '加载中...'},
+            'en': {'title': 'Image Comparison Tool','subtitle': 'Load two images for comparison analysis','loadImage1URL': 'Load Image 1 URL (Enter to load):','loadImage2URL': 'Load Image 2 URL (Enter to load):','orSelectFile': 'Or select a local file:','selectFile': 'Choose File','noFileChosen': 'No file chosen','sideBySide': 'Side by Side','overlap': 'Overlap','resetView': 'Reset View','noImage': 'No image loaded / Drop image here','operations': 'Operations','shortcuts': 'Shortcuts','toggleMode': 'Toggle mode','mouseWheel': 'Wheel / Pinch','zoomInOut': 'Zoom','leftClick': 'Drag / 1-Finger Drag','pan': 'Pan','doubleClick': 'Double-click','loading': 'Loading...'},
+            'ja': {'title': '画像比較ツール','subtitle': '2つの画像を読み込んで比較分析','loadImage1URL': '画像1のURL（エンターで読込）:','loadImage2URL': '画像2のURL（エンターで読込）:','orSelectFile': 'またはローカルファイルを選択:','selectFile': 'ファイルを選択','noFileChosen': '選択されていません','sideBySide': '並べて表示','overlap': '重ね合わせ','resetView': 'ビューをリセット','noImage': '画像未読み込み / ここにドロップ','operations': '操作説明','shortcuts': 'ショートカット','toggleMode': 'モード切替','mouseWheel': 'ホイール / ピンチ','zoomInOut': 'ズーム','leftClick': 'ドラッグ / 1本指ドラッグ','pan': 'パン','doubleClick': 'ダブルクリック','loading': '読み込み中...'}
+        };
+
+        function initializeApp() {
+            let currentLang = 'zh';
+
+            function applyLanguage(lang) { 
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (translations[lang] && translations[lang][key]) {
+                        if (key === 'noFileChosen' && el.dataset.hasFile === 'true') return;
+                        el.textContent = translations[lang][key];
+                    }
+                });
+            }
+
+            const imageState = {
+                image1: { loaded: false, scale: 1, translateX: 0, translateY: 0 },
+                image2: { loaded: false, scale: 1, translateX: 0, translateY: 0 },
+                mode: 'side-by-side', sliderPosition: 50
+            };
+
+            const imageContainer = document.getElementById('image-container');
+            const image1Display = document.getElementById('image1-display'), image2Display = document.getElementById('image2-display');
+            const image1Overlap = document.getElementById('image1-overlap'), image2Overlap = document.getElementById('image2-overlap');
+            const image2Wrapper = document.getElementById('image2-wrapper');
+            const wrapper1 = document.getElementById('wrapper1'), wrapper2 = document.getElementById('wrapper2');
+            const sideBySideMode = document.getElementById('side-by-side-mode'), overlapMode = document.getElementById('overlap-mode');
+            const sideBySideBtn = document.getElementById('side-by-side-btn'), overlapBtn = document.getElementById('overlap-btn');
+            const resetViewBtn = document.getElementById('reset-view-btn'), slider = document.getElementById('slider');
+
+            function loadImage(imageElement, url, stateObj) {
+                const wrapper = imageElement.parentElement;
+                const noImageEl = wrapper.querySelector('.no-image');
+                if (noImageEl) { noImageEl.textContent = translations[currentLang]['loading']; noImageEl.style.display = 'flex'; }
+                imageElement.style.display = 'none';
+
+                const img = new Image();
+                img.onload = () => {
+                    stateObj.loaded = true; stateObj.originalWidth = img.width; stateObj.originalHeight = img.height;
+                    imageElement.src = url; imageElement.style.display = 'block';
+                    if (noImageEl) noImageEl.style.display = 'none';
+
+                    if (imageElement === image1Display) image1Overlap.src = url;
+                    else if (imageElement === image2Display) image2Overlap.src = url;
+
+                    centerAndFitImage(stateObj, imageElement);
+                    updateImageTransform();
+                };
+                img.onerror = () => { if (noImageEl) { noImageEl.textContent = translations[currentLang]['noImage']; noImageEl.style.display = 'flex'; } };
+                img.src = url;
+            }
+            
+            function centerAndFitImage(stateObj, element) {
+                if (!stateObj.loaded) return;
+                const container = imageState.mode === 'side-by-side' ? element.parentElement : overlapMode;
+                const containerWidth = container.clientWidth, containerHeight = container.clientHeight;
+                const scale = Math.max(containerWidth / stateObj.originalWidth, containerHeight / stateObj.originalHeight);
+                stateObj.scale = scale;
+                stateObj.translateX = (containerWidth - stateObj.originalWidth * scale) / 2;
+                stateObj.translateY = (containerHeight - stateObj.originalHeight * scale) / 2;
+            }
+
+            function updateImageTransform() {
+                const transform1 = `translate(${imageState.image1.translateX}px, ${imageState.image1.translateY}px) scale(${imageState.image1.scale})`;
+                const transform2 = `translate(${imageState.image2.translateX}px, ${imageState.image2.translateY}px) scale(${imageState.image2.scale})`;
+                image1Display.style.transform = transform1; image2Display.style.transform = transform2;
+                image1Overlap.style.transform = transform1; image2Overlap.style.transform = transform2;
+                if (imageState.mode === 'overlap') {
+                    const clipPositionPx = Math.round(overlapMode.clientWidth * imageState.sliderPosition / 100);
+                    image2Wrapper.style.clipPath = `inset(0 0 0 ${clipPositionPx}px)`;
+                    slider.style.left = `${clipPositionPx}px`;
+                }
+            }
+
+            function toggleViewMode(mode) {
+                imageState.mode = mode;
+                if (mode === 'side-by-side') {
+                    sideBySideMode.style.display = 'flex'; overlapMode.style.display = 'none';
+                    sideBySideBtn.classList.add('active'); overlapBtn.classList.remove('active');
+                } else {
+                    sideBySideMode.style.display = 'none'; overlapMode.style.display = 'block';
+                    sideBySideBtn.classList.remove('active'); overlapBtn.classList.add('active');
+                }
+                resetView();
+            }
+
+            function resetView() {
+                centerAndFitImage(imageState.image1, image1Display);
+                centerAndFitImage(imageState.image2, image2Display);
+                imageState.sliderPosition = 50;
+                updateImageTransform();
+            }
+            
+            function setupUrlLoader(inputId, imageElement, stateObj) {
+                const input = document.getElementById(inputId);
+                const load = () => { const url = input.value.trim(); if (url) loadImage(imageElement, url, stateObj); };
+                input.addEventListener('keydown', e => { if (e.key === 'Enter') load(); });
+                input.addEventListener('blur', load);
+            }
+
+            function setupCustomFileUploader(btnId, realInputId, fileNameId, imageElement, stateObj) {
+                const customBtn = document.getElementById(btnId);
+                const realInput = document.getElementById(realInputId);
+                const fileNameDisplay = document.getElementById(fileNameId);
+                customBtn.addEventListener('click', () => realInput.click());
+                realInput.addEventListener('change', e => {
+                    if (e.target.files.length > 0) {
+                        fileNameDisplay.textContent = e.target.files[0].name;
+                        fileNameDisplay.dataset.hasFile = 'true';
+                        loadImage(imageElement, URL.createObjectURL(e.target.files[0]), stateObj);
+                    } else {
+                        fileNameDisplay.textContent = translations[currentLang]['noFileChosen'];
+                        fileNameDisplay.dataset.hasFile = 'false';
+                    }
+                });
+            }
+
+            function setupDropArea(dropTarget, imageElement, stateObj) {
+                dropTarget.addEventListener('dragover', e => { e.preventDefault(); dropTarget.classList.add('highlight'); });
+                dropTarget.addEventListener('dragleave', () => dropTarget.classList.remove('highlight'));
+                dropTarget.addEventListener('drop', e => {
+                    e.preventDefault(); dropTarget.classList.remove('highlight');
+                    if (e.dataTransfer.files[0]) loadImage(imageElement, URL.createObjectURL(e.dataTransfer.files[0]), stateObj);
+                });
+            }
+
+            // --- Setup All Event Listeners ---
+            document.getElementById('language-select').addEventListener('change', function() { currentLang = this.value; applyLanguage(currentLang); });
+            setupUrlLoader('image1-url', image1Display, imageState.image1);
+            setupUrlLoader('image2-url', image2Display, imageState.image2);
+            setupCustomFileUploader('custom-btn-1', 'image1-file', 'file-name-1', image1Display, imageState.image1);
+            setupCustomFileUploader('custom-btn-2', 'image2-file', 'file-name-2', image2Display, imageState.image2);
+            setupDropArea(wrapper1, image1Display, imageState.image1);
+            setupDropArea(wrapper2, image2Display, imageState.image2);
+            sideBySideBtn.addEventListener('click', () => toggleViewMode('side-by-side'));
+            overlapBtn.addEventListener('click', () => toggleViewMode('overlap'));
+            resetViewBtn.addEventListener('click', resetView);
+            imageContainer.addEventListener('dblclick', resetView);
+
+            let isDraggingSlider = false, isDraggingImage = false;
+            let dragStart = { x: 0, y: 0, tx1: 0, ty1: 0, tx2: 0, ty2: 0 };
+            let initialPinchDistance = 0;
+
+            function getPinchDistance(touches) {
+                return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+            }
+            
+            function handleZoom(delta, centerX, centerY) {
+                const rect = imageContainer.getBoundingClientRect();
+                const oldScale = imageState.image1.loaded ? imageState.image1.scale : (imageState.image2.loaded ? imageState.image2.scale : 1);
+                if (oldScale === 0) return;
+                const newScale = Math.max(0.1, oldScale * delta);
+                
+                [imageState.image1, imageState.image2].forEach(state => {
+                    if(state.loaded) {
+                        const imageMouseX = centerX - rect.left - state.translateX;
+                        const imageMouseY = centerY - rect.top - state.translateY;
+                        state.translateX -= imageMouseX * (newScale / oldScale - 1);
+                        state.translateY -= imageMouseY * (newScale / oldScale - 1);
+                        state.scale = newScale;
+                    }
+                });
+                updateImageTransform();
+            }
+
+            // Mouse Events
+            slider.addEventListener('mousedown', e => { isDraggingSlider = true; e.preventDefault(); e.stopPropagation(); });
+            imageContainer.addEventListener('mousedown', e => {
+                if (e.target === slider || slider.contains(e.target)) return;
+                isDraggingImage = true;
+                dragStart = { x: e.clientX, y: e.clientY, tx1: imageState.image1.translateX, ty1: imageState.image1.translateY, tx2: imageState.image2.translateX, ty2: imageState.image2.translateY };
+            });
+            document.addEventListener('mousemove', e => {
+                if (isDraggingSlider) {
+                    const rect = overlapMode.getBoundingClientRect();
+                    imageState.sliderPosition = Math.max(0, Math.min(100, (e.clientX - rect.left) / rect.width * 100));
+                    updateImageTransform();
+                }
+                if (isDraggingImage) {
+                    const deltaX = e.clientX - dragStart.x, deltaY = e.clientY - dragStart.y;
+                    imageState.image1.translateX = dragStart.tx1 + deltaX; imageState.image1.translateY = dragStart.ty1 + deltaY;
+                    imageState.image2.translateX = dragStart.tx2 + deltaX; imageState.image2.translateY = dragStart.ty2 + deltaY;
+                    updateImageTransform();
+                }
+            });
+            document.addEventListener('mouseup', () => { isDraggingImage = false; isDraggingSlider = false; });
+            imageContainer.addEventListener('wheel', e => {
+                e.preventDefault();
+                const zoomFactor = 1.1, delta = e.deltaY > 0 ? 1 / zoomFactor : zoomFactor;
+                handleZoom(delta, e.clientX, e.clientY);
+            });
+
+            // Touch Events
+            slider.addEventListener('touchstart', e => { isDraggingSlider = true; e.preventDefault(); e.stopPropagation(); });
+            imageContainer.addEventListener('touchstart', e => {
+                e.preventDefault();
+                const touches = e.touches;
+                if (e.target === slider || slider.contains(e.target)) return;
+                if (touches.length === 1) {
+                    isDraggingImage = true;
+                    dragStart = { x: touches[0].clientX, y: touches[0].clientY, tx1: imageState.image1.translateX, ty1: imageState.image1.translateY, tx2: imageState.image2.translateX, ty2: imageState.image2.translateY };
+                } else if (touches.length === 2) {
+                    isDraggingImage = false;
+                    initialPinchDistance = getPinchDistance(touches);
+                }
+            });
+            document.addEventListener('touchmove', e => {
+                const touches = e.touches;
+                if (isDraggingSlider) {
+                    e.preventDefault();
+                    const rect = overlapMode.getBoundingClientRect();
+                    imageState.sliderPosition = Math.max(0, Math.min(100, (touches[0].clientX - rect.left) / rect.width * 100));
+                    updateImageTransform();
+                } else if (isDraggingImage && touches.length === 1) {
+                    e.preventDefault();
+                    const deltaX = touches[0].clientX - dragStart.x, deltaY = touches[0].clientY - dragStart.y;
+                    imageState.image1.translateX = dragStart.tx1 + deltaX; imageState.image1.translateY = dragStart.ty1 + deltaY;
+                    imageState.image2.translateX = dragStart.tx2 + deltaX; imageState.image2.translateY = dragStart.ty2 + deltaY;
+                    updateImageTransform();
+                } else if (touches.length === 2) {
+                    e.preventDefault();
+                    const currentPinchDistance = getPinchDistance(touches);
+                    if (initialPinchDistance > 0) {
+                        const delta = currentPinchDistance / initialPinchDistance;
+                        const centerX = (touches[0].clientX + touches[1].clientX) / 2;
+                        const centerY = (touches[0].clientY + touches[1].clientY) / 2;
+                        handleZoom(delta, centerX, centerY);
+                        initialPinchDistance = currentPinchDistance;
+                    }
+                }
+            });
+            document.addEventListener('touchend', () => {
+                isDraggingImage = false; isDraggingSlider = false;
+                initialPinchDistance = 0;
+            });
+
+            document.addEventListener('keydown', e => {
+                if (e.target.tagName === 'INPUT') return;
+                if (e.key === ' ') { e.preventDefault(); toggleViewMode(imageState.mode === 'side-by-side' ? 'overlap' : 'side-by-side'); }
+                if (e.key.toLowerCase() === 'r') resetView();
+            });
+            
+            applyLanguage(currentLang);
+            toggleViewMode('side-by-side');
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>
