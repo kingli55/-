@@ -21,8 +21,6 @@
         h1 { color: var(--primary-color); margin-bottom: 5px; }
         p { font-size: 0.9em; color: #666; }
 
-        .language-selector { position: absolute; top: 20px; right: 20px; }
-        .language-selector select { padding: 5px; border-radius: 4px; border: 1px solid var(--border-color); }
         .controls { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; justify-content: center; }
         .control-group { flex: 1; min-width: 300px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .input-group { margin-bottom: 10px; }
@@ -38,10 +36,17 @@
         .custom-file-button:hover { background-color: #e0e0e0; }
         .file-name-display { margin-left: 10px; font-size: 0.9em; color: #777; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .view-mode { display: flex; justify-content: center; margin-bottom: 20px; }
-        .view-mode button { margin: 0 5px; background-color: var(--primary-color); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
-        .view-mode button:hover { background-color: #2980b9; }
-        .view-mode button.active { background-color: var(--secondary-color); }
+        /* [改良] 视图控制条，包含按钮和语言选择器 */
+        .view-controls { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; }
+        .view-controls button { background-color: var(--primary-color); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
+        .view-controls button:hover { background-color: #2980b9; }
+        .view-controls button.active { background-color: var(--secondary-color); }
+        
+        /* [改良] 语言选择器新样式 */
+        .language-selector { display: flex; align-items: center; gap: 8px; }
+        .language-selector label { font-size: 0.9em; }
+        .language-selector select { padding: 5px; border-radius: 4px; border: 1px solid var(--border-color); }
+
         .image-container { position: relative; width: 100%; height: 600px; background-color: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); cursor: move; touch-action: none; }
         .side-by-side-mode { display: flex; height: 100%; }
         .image-wrapper { position: relative; flex: 1; height: 100%; overflow: hidden; transition: box-shadow 0.3s; }
@@ -60,8 +65,10 @@
         .info-box ul { list-style-type: none; padding-left: 0; }
         .info-box li { margin-bottom: 4px; font-size: 0.9em; }
         .info-box kbd { background-color: #f1f1f1; border: 1px solid #ccc; border-radius: 3px; box-shadow: 0 1px 0 rgba(0,0,0,0.2); color: #333; display: inline-block; font-size: 0.85em; font-weight: bold; line-height: 1; padding: 2px 5px; white-space: nowrap; }
-        .no-image, .loading { display: flex; justify-content: center; align-items: center; height: 100%; color: #999; font-style: italic; }
-        .loading { color: var(--primary-color); font-weight: bold; }
+        
+        /* [改良] "未加载"提示文字上移 */
+        .no-image { display: flex; justify-content: center; align-items: flex-start; height: 100%; padding-top: 20px; color: #999; font-style: italic; }
+        .loading { display: flex; justify-content: center; align-items: center; height: 100%; color: var(--primary-color); font-weight: bold; }
         
         @media (max-width: 768px) {
             .control-group { min-width: 100%; }
@@ -72,14 +79,6 @@
 </head>
 <body>
     <div class="container">
-        <div class="language-selector">
-            <select id="language-select">
-                <option value="zh" selected>中文</option>
-                <option value="en">English</option>
-                <option value="ja">日本語</option>
-            </select>
-        </div>
-
         <div class="header-main">
             <div class="title-area">
                 <h1 data-i18n="title">图片对比工具</h1>
@@ -87,7 +86,6 @@
             </div>
             
             <div class="info-box">
-                <!-- [优化] 标题改为“操作说明” -->
                 <h3 data-i18n="operations">操作说明</h3>
                 <ul>
                     <li><span data-i18n="leftClick">拖动 / 单指拖动</span>: <span data-i18n="pan">平移</span></li>
@@ -136,9 +134,21 @@
             </div>
         </div>
 
-        <div class="view-mode">
+        <!-- [改良] 控制条新布局 -->
+        <div class="view-controls">
             <button id="side-by-side-btn" class="active" data-i18n="sideBySide">并排模式</button>
             <button id="overlap-btn" data-i18n="overlap">重叠模式</button>
+            
+            <!-- [改良] 语言选择器移到此处 -->
+            <div class="language-selector">
+                <label for="language-select" data-i18n="languageLabel">语言:</label>
+                <select id="language-select">
+                    <option value="zh">中文</option>
+                    <option value="en">English</option>
+                    <option value="ja">日本語</option>
+                </select>
+            </div>
+
             <button id="reset-view-btn" data-i18n="resetView">重置视图</button>
         </div>
 
@@ -170,13 +180,13 @@
 
     <script>
         const translations = {
-            'zh': {'title': '图片对比工具','subtitle': '加载两张图片进行对比分析','loadImage1URL': '加载图片 1 URL (回车加载):','loadImage2URL': '加载图片 2 URL (回车加载):','orSelectFile': '或选择本地文件:','selectFile': '选择文件','noFileChosen': '未选择任何文件','sideBySide': '并排模式','overlap': '重叠模式','resetView': '重置视图','noImage': '未加载图片 / 拖放图片到这里','operations': '操作说明','shortcuts': '快捷键','toggleMode': '切换模式','mouseWheel': '滚轮 / 双指捏合','zoomInOut': '缩放','leftClick': '拖动 / 单指拖动','pan': '平移','doubleClick': '双击','loading': '加载中...'},
-            'en': {'title': 'Image Comparison Tool','subtitle': 'Load two images for comparison analysis','loadImage1URL': 'Load Image 1 URL (Enter to load):','loadImage2URL': 'Load Image 2 URL (Enter to load):','orSelectFile': 'Or select a local file:','selectFile': 'Choose File','noFileChosen': 'No file chosen','sideBySide': 'Side by Side','overlap': 'Overlap','resetView': 'Reset View','noImage': 'No image loaded / Drop image here','operations': 'Operations','shortcuts': 'Shortcuts','toggleMode': 'Toggle mode','mouseWheel': 'Wheel / Pinch','zoomInOut': 'Zoom','leftClick': 'Drag / 1-Finger Drag','pan': 'Pan','doubleClick': 'Double-click','loading': 'Loading...'},
-            'ja': {'title': '画像比較ツール','subtitle': '2つの画像を読み込んで比較分析','loadImage1URL': '画像1のURL（エンターで読込）:','loadImage2URL': '画像2のURL（エンターで読込）:','orSelectFile': 'またはローカルファイルを選択:','selectFile': 'ファイルを選択','noFileChosen': '選択されていません','sideBySide': '並べて表示','overlap': '重ね合わせ','resetView': 'ビューをリセット','noImage': '画像未読み込み / ここにドロップ','operations': '操作説明','shortcuts': 'ショートカット','toggleMode': 'モード切替','mouseWheel': 'ホイール / ピンチ','zoomInOut': 'ズーム','leftClick': 'ドラッグ / 1本指ドラッグ','pan': 'パン','doubleClick': 'ダブルクリック','loading': '読み込み中...'}
+            'zh': {'title': '图片对比工具','subtitle': '加载两张图片进行对比分析','loadImage1URL': '加载图片 1 URL (回车加载):','loadImage2URL': '加载图片 2 URL (回车加载):','orSelectFile': '或选择本地文件:','selectFile': '选择文件','noFileChosen': '未选择任何文件','sideBySide': '并排模式','overlap': '重叠模式','resetView': '重置视图','noImage': '未加载图片 / 拖放图片到这里','operations': '操作说明','shortcuts': '快捷键','toggleMode': '切换模式','mouseWheel': '滚轮 / 双指捏合','zoomInOut': '缩放','leftClick': '拖动 / 单指拖动','pan': '平移','doubleClick': '双击','loading': '加载中...','languageLabel': '语言:'},
+            'en': {'title': 'Image Comparison Tool','subtitle': 'Load two images for comparison analysis','loadImage1URL': 'Load Image 1 URL (Enter to load):','loadImage2URL': 'Load Image 2 URL (Enter to load):','orSelectFile': 'Or select a local file:','selectFile': 'Choose File','noFileChosen': 'No file chosen','sideBySide': 'Side by Side','overlap': 'Overlap','resetView': 'Reset View','noImage': 'No image loaded / Drop image here','operations': 'Operations','shortcuts': 'Shortcuts','toggleMode': 'Toggle mode','mouseWheel': 'Wheel / Pinch','zoomInOut': 'Zoom','leftClick': 'Drag / 1-Finger Drag','pan': 'Pan','doubleClick': 'Double-click','loading': 'Loading...','languageLabel': 'Language:'},
+            'ja': {'title': '画像比較ツール','subtitle': '2つの画像を読み込んで比較分析','loadImage1URL': '画像1のURL（エンターで読込）:','loadImage2URL': '画像2のURL（エンターで読込）:','orSelectFile': 'またはローカルファイルを選択:','selectFile': 'ファイルを選択','noFileChosen': '選択されていません','sideBySide': '並べて表示','overlap': '重ね合わせ','resetView': 'ビューをリセット','noImage': '画像未読み込み / ここにドロップ','operations': '操作説明','shortcuts': 'ショートカット','toggleMode': 'モード切替','mouseWheel': 'ホイール / ピンチ','zoomInOut': 'ズーム','leftClick': 'ドラッグ / 1本指ドラッグ','pan': 'パン','doubleClick': 'ダブルクリック','loading': '読み込み中...','languageLabel': '言語:'}
         };
 
         function initializeApp() {
-            let currentLang = 'zh';
+            let currentLang;
 
             function applyLanguage(lang) { 
                 document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -194,6 +204,7 @@
                 mode: 'side-by-side', sliderPosition: 50
             };
 
+            const langSelect = document.getElementById('language-select');
             const imageContainer = document.getElementById('image-container');
             const image1Display = document.getElementById('image1-display'), image2Display = document.getElementById('image2-display');
             const image1Overlap = document.getElementById('image1-overlap'), image2Overlap = document.getElementById('image2-overlap');
@@ -298,34 +309,18 @@
                     if (e.dataTransfer.files[0]) loadImage(imageElement, URL.createObjectURL(e.dataTransfer.files[0]), stateObj);
                 });
             }
-
-            // --- Setup All Event Listeners ---
-            document.getElementById('language-select').addEventListener('change', function() { currentLang = this.value; applyLanguage(currentLang); });
-            setupUrlLoader('image1-url', image1Display, imageState.image1);
-            setupUrlLoader('image2-url', image2Display, imageState.image2);
-            setupCustomFileUploader('custom-btn-1', 'image1-file', 'file-name-1', image1Display, imageState.image1);
-            setupCustomFileUploader('custom-btn-2', 'image2-file', 'file-name-2', image2Display, imageState.image2);
-            setupDropArea(wrapper1, image1Display, imageState.image1);
-            setupDropArea(wrapper2, image2Display, imageState.image2);
-            sideBySideBtn.addEventListener('click', () => toggleViewMode('side-by-side'));
-            overlapBtn.addEventListener('click', () => toggleViewMode('overlap'));
-            resetViewBtn.addEventListener('click', resetView);
-            imageContainer.addEventListener('dblclick', resetView);
-
+            
+            // --- Touch & Mouse Event Handlers ---
             let isDraggingSlider = false, isDraggingImage = false;
             let dragStart = { x: 0, y: 0, tx1: 0, ty1: 0, tx2: 0, ty2: 0 };
             let initialPinchDistance = 0;
 
-            function getPinchDistance(touches) {
-                return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
-            }
-            
+            function getPinchDistance(touches) { return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY); }
             function handleZoom(delta, centerX, centerY) {
                 const rect = imageContainer.getBoundingClientRect();
                 const oldScale = imageState.image1.loaded ? imageState.image1.scale : (imageState.image2.loaded ? imageState.image2.scale : 1);
                 if (oldScale === 0) return;
                 const newScale = Math.max(0.1, oldScale * delta);
-                
                 [imageState.image1, imageState.image2].forEach(state => {
                     if(state.loaded) {
                         const imageMouseX = centerX - rect.left - state.translateX;
@@ -337,85 +332,97 @@
                 });
                 updateImageTransform();
             }
-
-            // Mouse Events
-            slider.addEventListener('mousedown', e => { isDraggingSlider = true; e.preventDefault(); e.stopPropagation(); });
-            imageContainer.addEventListener('mousedown', e => {
-                if (e.target === slider || slider.contains(e.target)) return;
-                isDraggingImage = true;
-                dragStart = { x: e.clientX, y: e.clientY, tx1: imageState.image1.translateX, ty1: imageState.image1.translateY, tx2: imageState.image2.translateX, ty2: imageState.image2.translateY };
-            });
-            document.addEventListener('mousemove', e => {
-                if (isDraggingSlider) {
-                    const rect = overlapMode.getBoundingClientRect();
-                    imageState.sliderPosition = Math.max(0, Math.min(100, (e.clientX - rect.left) / rect.width * 100));
-                    updateImageTransform();
-                }
-                if (isDraggingImage) {
-                    const deltaX = e.clientX - dragStart.x, deltaY = e.clientY - dragStart.y;
-                    imageState.image1.translateX = dragStart.tx1 + deltaX; imageState.image1.translateY = dragStart.ty1 + deltaY;
-                    imageState.image2.translateX = dragStart.tx2 + deltaX; imageState.image2.translateY = dragStart.ty2 + deltaY;
-                    updateImageTransform();
-                }
-            });
-            document.addEventListener('mouseup', () => { isDraggingImage = false; isDraggingSlider = false; });
-            imageContainer.addEventListener('wheel', e => {
-                e.preventDefault();
-                const zoomFactor = 1.1, delta = e.deltaY > 0 ? 1 / zoomFactor : zoomFactor;
-                handleZoom(delta, e.clientX, e.clientY);
-            });
-
-            // Touch Events
-            slider.addEventListener('touchstart', e => { isDraggingSlider = true; e.preventDefault(); e.stopPropagation(); });
-            imageContainer.addEventListener('touchstart', e => {
-                e.preventDefault();
-                const touches = e.touches;
-                if (e.target === slider || slider.contains(e.target)) return;
-                if (touches.length === 1) {
-                    isDraggingImage = true;
-                    dragStart = { x: touches[0].clientX, y: touches[0].clientY, tx1: imageState.image1.translateX, ty1: imageState.image1.translateY, tx2: imageState.image2.translateX, ty2: imageState.image2.translateY };
-                } else if (touches.length === 2) {
-                    isDraggingImage = false;
-                    initialPinchDistance = getPinchDistance(touches);
-                }
-            });
-            document.addEventListener('touchmove', e => {
-                const touches = e.touches;
-                if (isDraggingSlider) {
-                    e.preventDefault();
-                    const rect = overlapMode.getBoundingClientRect();
-                    imageState.sliderPosition = Math.max(0, Math.min(100, (touches[0].clientX - rect.left) / rect.width * 100));
-                    updateImageTransform();
-                } else if (isDraggingImage && touches.length === 1) {
-                    e.preventDefault();
-                    const deltaX = touches[0].clientX - dragStart.x, deltaY = touches[0].clientY - dragStart.y;
-                    imageState.image1.translateX = dragStart.tx1 + deltaX; imageState.image1.translateY = dragStart.ty1 + deltaY;
-                    imageState.image2.translateX = dragStart.tx2 + deltaX; imageState.image2.translateY = dragStart.ty2 + deltaY;
-                    updateImageTransform();
-                } else if (touches.length === 2) {
-                    e.preventDefault();
-                    const currentPinchDistance = getPinchDistance(touches);
-                    if (initialPinchDistance > 0) {
-                        const delta = currentPinchDistance / initialPinchDistance;
-                        const centerX = (touches[0].clientX + touches[1].clientX) / 2;
-                        const centerY = (touches[0].clientY + touches[1].clientY) / 2;
-                        handleZoom(delta, centerX, centerY);
-                        initialPinchDistance = currentPinchDistance;
-                    }
-                }
-            });
-            document.addEventListener('touchend', () => {
-                isDraggingImage = false; isDraggingSlider = false;
-                initialPinchDistance = 0;
-            });
-
-            document.addEventListener('keydown', e => {
-                if (e.target.tagName === 'INPUT') return;
-                if (e.key === ' ') { e.preventDefault(); toggleViewMode(imageState.mode === 'side-by-side' ? 'overlap' : 'side-by-side'); }
-                if (e.key.toLowerCase() === 'r') resetView();
-            });
             
+            // --- Setup All Event Listeners ---
+            function setupEventListeners() {
+                langSelect.addEventListener('change', function() { currentLang = this.value; applyLanguage(currentLang); });
+                setupUrlLoader('image1-url', image1Display, imageState.image1);
+                setupUrlLoader('image2-url', image2Display, imageState.image2);
+                setupCustomFileUploader('custom-btn-1', 'image1-file', 'file-name-1', image1Display, imageState.image1);
+                setupCustomFileUploader('custom-btn-2', 'image2-file', 'file-name-2', image2Display, imageState.image2);
+                setupDropArea(wrapper1, image1Display, imageState.image1);
+                setupDropArea(wrapper2, image2Display, imageState.image2);
+                sideBySideBtn.addEventListener('click', () => toggleViewMode('side-by-side'));
+                overlapBtn.addEventListener('click', () => toggleViewMode('overlap'));
+                resetViewBtn.addEventListener('click', resetView);
+                imageContainer.addEventListener('dblclick', resetView);
+
+                slider.addEventListener('mousedown', e => { isDraggingSlider = true; e.preventDefault(); e.stopPropagation(); });
+                imageContainer.addEventListener('mousedown', e => {
+                    if (e.target === slider || slider.contains(e.target)) return;
+                    isDraggingImage = true;
+                    dragStart = { x: e.clientX, y: e.clientY, tx1: imageState.image1.translateX, ty1: imageState.image1.translateY, tx2: imageState.image2.translateX, ty2: imageState.image2.translateY };
+                });
+                document.addEventListener('mousemove', e => {
+                    if (isDraggingSlider) {
+                        const rect = overlapMode.getBoundingClientRect();
+                        imageState.sliderPosition = Math.max(0, Math.min(100, (e.clientX - rect.left) / rect.width * 100));
+                        updateImageTransform();
+                    }
+                    if (isDraggingImage) {
+                        const deltaX = e.clientX - dragStart.x, deltaY = e.clientY - dragStart.y;
+                        imageState.image1.translateX = dragStart.tx1 + deltaX; imageState.image1.translateY = dragStart.ty1 + deltaY;
+                        imageState.image2.translateX = dragStart.tx2 + deltaX; imageState.image2.translateY = dragStart.ty2 + deltaY;
+                        updateImageTransform();
+                    }
+                });
+                document.addEventListener('mouseup', () => { isDraggingImage = false; isDraggingSlider = false; });
+                imageContainer.addEventListener('wheel', e => { e.preventDefault(); handleZoom(e.deltaY > 0 ? 1 / 1.1 : 1.1, e.clientX, e.clientY); });
+                slider.addEventListener('touchstart', e => { isDraggingSlider = true; e.preventDefault(); e.stopPropagation(); }, { passive: false });
+                imageContainer.addEventListener('touchstart', e => {
+                    e.preventDefault();
+                    const touches = e.touches;
+                    if (e.target === slider || slider.contains(e.target)) return;
+                    if (touches.length === 1) {
+                        isDraggingImage = true;
+                        dragStart = { x: touches[0].clientX, y: touches[0].clientY, tx1: imageState.image1.translateX, ty1: imageState.image1.translateY, tx2: imageState.image2.translateX, ty2: imageState.image2.translateY };
+                    } else if (touches.length === 2) {
+                        isDraggingImage = false;
+                        initialPinchDistance = getPinchDistance(touches);
+                    }
+                }, { passive: false });
+                document.addEventListener('touchmove', e => {
+                    const touches = e.touches;
+                    if (isDraggingSlider) {
+                        e.preventDefault();
+                        const rect = overlapMode.getBoundingClientRect();
+                        imageState.sliderPosition = Math.max(0, Math.min(100, (touches[0].clientX - rect.left) / rect.width * 100));
+                        updateImageTransform();
+                    } else if (isDraggingImage && touches.length === 1) {
+                        e.preventDefault();
+                        const deltaX = touches[0].clientX - dragStart.x, deltaY = touches[0].clientY - dragStart.y;
+                        imageState.image1.translateX = dragStart.tx1 + deltaX; imageState.image1.translateY = dragStart.ty1 + deltaY;
+                        imageState.image2.translateX = dragStart.tx2 + deltaX; imageState.image2.translateY = dragStart.ty2 + deltaY;
+                        updateImageTransform();
+                    } else if (touches.length === 2) {
+                        e.preventDefault();
+                        const currentPinchDistance = getPinchDistance(touches);
+                        if (initialPinchDistance > 0) {
+                            const delta = currentPinchDistance / initialPinchDistance;
+                            const centerX = (touches[0].clientX + touches[1].clientX) / 2;
+                            const centerY = (touches[0].clientY + touches[1].clientY) / 2;
+                            handleZoom(delta, centerX, centerY);
+                            initialPinchDistance = currentPinchDistance;
+                        }
+                    }
+                }, { passive: false });
+                document.addEventListener('touchend', () => { isDraggingImage = false; isDraggingSlider = false; initialPinchDistance = 0; });
+                document.addEventListener('keydown', e => {
+                    if (e.target.tagName === 'INPUT') return;
+                    if (e.key === ' ') { e.preventDefault(); toggleViewMode(imageState.mode === 'side-by-side' ? 'overlap' : 'side-by-side'); }
+                    if (e.key.toLowerCase() === 'r') resetView();
+                });
+            }
+
+            // --- Initial Page Load Setup ---
+            // [改良] 自动检测浏览器语言
+            const supportedLangs = Object.keys(translations);
+            const browserLang = (navigator.language || navigator.userLanguage).split('-')[0];
+            currentLang = supportedLangs.includes(browserLang) ? browserLang : 'en'; // 默认回退到英文
+            
+            langSelect.value = currentLang;
             applyLanguage(currentLang);
+            setupEventListeners();
             toggleViewMode('side-by-side');
         }
 
