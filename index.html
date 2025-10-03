@@ -8,6 +8,7 @@
         :root {
             --primary-color: #3498db;
             --secondary-color: #2ecc71;
+            --danger-color: #e74c3c;
             --background-color: #f5f5f5;
             --text-color: #333;
             --border-color: #ddd;
@@ -35,14 +36,21 @@
         }
         .custom-file-button:hover { background-color: #e0e0e0; }
         .file-name-display { margin-left: 10px; font-size: 0.9em; color: #777; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        /* [改良] 视图控制条，包含按钮和语言选择器 */
+        
+        /* [改良] 视图控制条使用 flex 布局 */
         .view-controls { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; }
         .view-controls button { background-color: var(--primary-color); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
         .view-controls button:hover { background-color: #2980b9; }
         .view-controls button.active { background-color: var(--secondary-color); }
         
-        /* [改良] 语言选择器新样式 */
+        /* [改良] 新增清空按钮的样式和布局 */
+        #clear-btn { 
+            margin-right: auto; /* 关键：将此按钮推到最左侧 */
+            background-color: var(--danger-color);
+        }
+        #clear-btn:hover { background-color: #c0392b; }
+        #reset-view-btn { margin-left: auto; /* 关键：将此按钮推到最右侧 */ }
+        
         .language-selector { display: flex; align-items: center; gap: 8px; }
         .language-selector label { font-size: 0.9em; }
         .language-selector select { padding: 5px; border-radius: 4px; border: 1px solid var(--border-color); }
@@ -66,7 +74,6 @@
         .info-box li { margin-bottom: 4px; font-size: 0.9em; }
         .info-box kbd { background-color: #f1f1f1; border: 1px solid #ccc; border-radius: 3px; box-shadow: 0 1px 0 rgba(0,0,0,0.2); color: #333; display: inline-block; font-size: 0.85em; font-weight: bold; line-height: 1; padding: 2px 5px; white-space: nowrap; }
         
-        /* [改良] "未加载"提示文字上移 */
         .no-image { display: flex; justify-content: center; align-items: flex-start; height: 100%; padding-top: 20px; color: #999; font-style: italic; }
         .loading { display: flex; justify-content: center; align-items: center; height: 100%; color: var(--primary-color); font-weight: bold; }
         
@@ -79,12 +86,12 @@
 </head>
 <body>
     <div class="container">
+        <!-- ... header, controls ... -->
         <div class="header-main">
             <div class="title-area">
                 <h1 data-i18n="title">图片对比工具</h1>
                 <p data-i18n="subtitle">加载两张图片进行对比分析</p>
             </div>
-            
             <div class="info-box">
                 <h3 data-i18n="operations">操作说明</h3>
                 <ul>
@@ -92,7 +99,6 @@
                     <li><span data-i18n="mouseWheel">滚轮 / 双指捏合</span>: <span data-i18n="zoomInOut">缩放</span></li>
                 </ul>
             </div>
-            
             <div class="info-box">
                 <h3 data-i18n="shortcuts">快捷键</h3>
                 <ul>
@@ -101,9 +107,7 @@
                 </ul>
             </div>
         </div>
-
         <div class="controls">
-            <!-- ... control groups ... -->
             <div class="control-group">
                 <div class="input-group">
                     <label for="image1-url" data-i18n="loadImage1URL">加载图片 1 URL (回车加载):</label>
@@ -134,12 +138,13 @@
             </div>
         </div>
 
-        <!-- [改良] 控制条新布局 -->
         <div class="view-controls">
+            <!-- [改良] 新增清空按钮 -->
+            <button id="clear-btn" data-i18n="clearAll">清空</button>
+
             <button id="side-by-side-btn" class="active" data-i18n="sideBySide">并排模式</button>
             <button id="overlap-btn" data-i18n="overlap">重叠模式</button>
             
-            <!-- [改良] 语言选择器移到此处 -->
             <div class="language-selector">
                 <label for="language-select" data-i18n="languageLabel">语言:</label>
                 <select id="language-select">
@@ -180,9 +185,9 @@
 
     <script>
         const translations = {
-            'zh': {'title': '图片对比工具','subtitle': '加载两张图片进行对比分析','loadImage1URL': '加载图片 1 URL (回车加载):','loadImage2URL': '加载图片 2 URL (回车加载):','orSelectFile': '或选择本地文件:','selectFile': '选择文件','noFileChosen': '未选择任何文件','sideBySide': '并排模式','overlap': '重叠模式','resetView': '重置视图','noImage': '未加载图片 / 拖放图片到这里','operations': '操作说明','shortcuts': '快捷键','toggleMode': '切换模式','mouseWheel': '滚轮 / 双指捏合','zoomInOut': '缩放','leftClick': '拖动 / 单指拖动','pan': '平移','doubleClick': '双击','loading': '加载中...','languageLabel': '语言:'},
-            'en': {'title': 'Image Comparison Tool','subtitle': 'Load two images for comparison analysis','loadImage1URL': 'Load Image 1 URL (Enter to load):','loadImage2URL': 'Load Image 2 URL (Enter to load):','orSelectFile': 'Or select a local file:','selectFile': 'Choose File','noFileChosen': 'No file chosen','sideBySide': 'Side by Side','overlap': 'Overlap','resetView': 'Reset View','noImage': 'No image loaded / Drop image here','operations': 'Operations','shortcuts': 'Shortcuts','toggleMode': 'Toggle mode','mouseWheel': 'Wheel / Pinch','zoomInOut': 'Zoom','leftClick': 'Drag / 1-Finger Drag','pan': 'Pan','doubleClick': 'Double-click','loading': 'Loading...','languageLabel': 'Language:'},
-            'ja': {'title': '画像比較ツール','subtitle': '2つの画像を読み込んで比較分析','loadImage1URL': '画像1のURL（エンターで読込）:','loadImage2URL': '画像2のURL（エンターで読込）:','orSelectFile': 'またはローカルファイルを選択:','selectFile': 'ファイルを選択','noFileChosen': '選択されていません','sideBySide': '並べて表示','overlap': '重ね合わせ','resetView': 'ビューをリセット','noImage': '画像未読み込み / ここにドロップ','operations': '操作説明','shortcuts': 'ショートカット','toggleMode': 'モード切替','mouseWheel': 'ホイール / ピンチ','zoomInOut': 'ズーム','leftClick': 'ドラッグ / 1本指ドラッグ','pan': 'パン','doubleClick': 'ダブルクリック','loading': '読み込み中...','languageLabel': '言語:'}
+            'zh': {'title': '图片对比工具','subtitle': '加载两张图片进行对比分析','loadImage1URL': '加载图片 1 URL (回车加载):','loadImage2URL': '加载图片 2 URL (回车加载):','orSelectFile': '或选择本地文件:','selectFile': '选择文件','noFileChosen': '未选择任何文件','sideBySide': '并排模式','overlap': '重叠模式','resetView': '重置视图','clearAll': '清空','noImage': '未加载图片 / 拖放图片到这里','operations': '操作说明','shortcuts': '快捷键','toggleMode': '切换模式','mouseWheel': '滚轮 / 双指捏合','zoomInOut': '缩放','leftClick': '拖动 / 单指拖动','pan': '平移','doubleClick': '双击','loading': '加载中...','languageLabel': '语言:'},
+            'en': {'title': 'Image Comparison Tool','subtitle': 'Load two images for comparison analysis','loadImage1URL': 'Load Image 1 URL (Enter to load):','loadImage2URL': 'Load Image 2 URL (Enter to load):','orSelectFile': 'Or select a local file:','selectFile': 'Choose File','noFileChosen': 'No file chosen','sideBySide': 'Side by Side','overlap': 'Overlap','resetView': 'Reset View','clearAll': 'Clear All','noImage': 'No image loaded / Drop image here','operations': 'Operations','shortcuts': 'Shortcuts','toggleMode': 'Toggle mode','mouseWheel': 'Wheel / Pinch','zoomInOut': 'Zoom','leftClick': 'Drag / 1-Finger Drag','pan': 'Pan','doubleClick': 'Double-click','loading': 'Loading...','languageLabel': 'Language:'},
+            'ja': {'title': '画像比較ツール','subtitle': '2つの画像を読み込んで比較分析','loadImage1URL': '画像1のURL（エンターで読込）:','loadImage2URL': '画像2のURL（エンターで読込）:','orSelectFile': 'またはローカルファイルを選択:','selectFile': 'ファイルを選択','noFileChosen': '選択されていません','sideBySide': '並べて表示','overlap': '重ね合わせ','resetView': 'ビューをリセット','clearAll': 'クリア','noImage': '画像未読み込み / ここにドロップ','operations': '操作説明','shortcuts': 'ショートカット','toggleMode': 'モード切替','mouseWheel': 'ホイール / ピンチ','zoomInOut': 'ズーム','leftClick': 'ドラッグ / 1本指ドラッグ','pan': 'パン','doubleClick': 'ダブルクリック','loading': '読み込み中...','languageLabel': '言語:'}
         };
 
         function initializeApp() {
@@ -213,6 +218,7 @@
             const sideBySideMode = document.getElementById('side-by-side-mode'), overlapMode = document.getElementById('overlap-mode');
             const sideBySideBtn = document.getElementById('side-by-side-btn'), overlapBtn = document.getElementById('overlap-btn');
             const resetViewBtn = document.getElementById('reset-view-btn'), slider = document.getElementById('slider');
+            const clearBtn = document.getElementById('clear-btn'); // [改良] 获取清空按钮
 
             function loadImage(imageElement, url, stateObj) {
                 const wrapper = imageElement.parentElement;
@@ -225,10 +231,8 @@
                     stateObj.loaded = true; stateObj.originalWidth = img.width; stateObj.originalHeight = img.height;
                     imageElement.src = url; imageElement.style.display = 'block';
                     if (noImageEl) noImageEl.style.display = 'none';
-
                     if (imageElement === image1Display) image1Overlap.src = url;
                     else if (imageElement === image2Display) image2Overlap.src = url;
-
                     centerAndFitImage(stateObj, imageElement);
                     updateImageTransform();
                 };
@@ -276,6 +280,36 @@
                 imageState.sliderPosition = 50;
                 updateImageTransform();
             }
+
+            // [改良] 新增清空所有内容的函数
+            function clearAll() {
+                // 清空图片1
+                image1Display.src = '';
+                image1Display.style.display = 'none';
+                image1Overlap.src = '';
+                imageState.image1.loaded = false;
+                wrapper1.querySelector('.no-image').style.display = 'flex';
+                document.getElementById('image1-url').value = '';
+                document.getElementById('image1-file').value = null;
+                const fileName1 = document.getElementById('file-name-1');
+                fileName1.textContent = translations[currentLang]['noFileChosen'];
+                fileName1.dataset.hasFile = 'false';
+
+                // 清空图片2
+                image2Display.src = '';
+                image2Display.style.display = 'none';
+                image2Overlap.src = '';
+                imageState.image2.loaded = false;
+                wrapper2.querySelector('.no-image').style.display = 'flex';
+                document.getElementById('image2-url').value = '';
+                document.getElementById('image2-file').value = null;
+                const fileName2 = document.getElementById('file-name-2');
+                fileName2.textContent = translations[currentLang]['noFileChosen'];
+                fileName2.dataset.hasFile = 'false';
+
+                // 重置视图状态
+                resetView();
+            }
             
             function setupUrlLoader(inputId, imageElement, stateObj) {
                 const input = document.getElementById(inputId);
@@ -310,19 +344,18 @@
                 });
             }
             
-            // --- Touch & Mouse Event Handlers ---
             let isDraggingSlider = false, isDraggingImage = false;
             let dragStart = { x: 0, y: 0, tx1: 0, ty1: 0, tx2: 0, ty2: 0 };
             let initialPinchDistance = 0;
 
             function getPinchDistance(touches) { return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY); }
+            
             function handleZoom(delta, centerX, centerY) {
                 const rect = imageContainer.getBoundingClientRect();
-                const oldScale = imageState.image1.loaded ? imageState.image1.scale : (imageState.image2.loaded ? imageState.image2.scale : 1);
-                if (oldScale === 0) return;
-                const newScale = Math.max(0.1, oldScale * delta);
                 [imageState.image1, imageState.image2].forEach(state => {
                     if(state.loaded) {
+                        const oldScale = state.scale;
+                        const newScale = Math.max(0.1, oldScale * delta);
                         const imageMouseX = centerX - rect.left - state.translateX;
                         const imageMouseY = centerY - rect.top - state.translateY;
                         state.translateX -= imageMouseX * (newScale / oldScale - 1);
@@ -333,9 +366,9 @@
                 updateImageTransform();
             }
             
-            // --- Setup All Event Listeners ---
             function setupEventListeners() {
                 langSelect.addEventListener('change', function() { currentLang = this.value; applyLanguage(currentLang); });
+                clearBtn.addEventListener('click', clearAll); // [改良] 绑定清空事件
                 setupUrlLoader('image1-url', image1Display, imageState.image1);
                 setupUrlLoader('image2-url', image2Display, imageState.image2);
                 setupCustomFileUploader('custom-btn-1', 'image1-file', 'file-name-1', image1Display, imageState.image1);
@@ -414,11 +447,9 @@
                 });
             }
 
-            // --- Initial Page Load Setup ---
-            // [改良] 自动检测浏览器语言
             const supportedLangs = Object.keys(translations);
             const browserLang = (navigator.language || navigator.userLanguage).split('-')[0];
-            currentLang = supportedLangs.includes(browserLang) ? browserLang : 'en'; // 默认回退到英文
+            currentLang = supportedLangs.includes(browserLang) ? browserLang : 'en';
             
             langSelect.value = currentLang;
             applyLanguage(currentLang);
