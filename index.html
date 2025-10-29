@@ -37,19 +37,14 @@
         .custom-file-button:hover { background-color: #e0e0e0; }
         .file-name-display { margin-left: 10px; font-size: 0.9em; color: #777; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
-        /* [改良] 视图控制条使用 flex 布局 */
         .view-controls { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; }
         .view-controls button { background-color: var(--primary-color); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
         .view-controls button:hover { background-color: #2980b9; }
         .view-controls button.active { background-color: var(--secondary-color); }
         
-        /* [改良] 新增清空按钮的样式和布局 */
-        #clear-btn { 
-            margin-right: auto; /* 关键：将此按钮推到最左侧 */
-            background-color: var(--danger-color);
-        }
+        #clear-btn { margin-right: auto; background-color: var(--danger-color); }
         #clear-btn:hover { background-color: #c0392b; }
-        #reset-view-btn { margin-left: auto; /* 关键：将此按钮推到最右侧 */ }
+        #reset-view-btn { margin-left: auto; }
         
         .language-selector { display: flex; align-items: center; gap: 8px; }
         .language-selector label { font-size: 0.9em; }
@@ -74,8 +69,13 @@
         .info-box li { margin-bottom: 4px; font-size: 0.9em; }
         .info-box kbd { background-color: #f1f1f1; border: 1px solid #ccc; border-radius: 3px; box-shadow: 0 1px 0 rgba(0,0,0,0.2); color: #333; display: inline-block; font-size: 0.85em; font-weight: bold; line-height: 1; padding: 2px 5px; white-space: nowrap; }
         
-        .no-image { display: flex; justify-content: center; align-items: flex-start; height: 100%; padding-top: 20px; color: #999; font-style: italic; }
-        .loading { display: flex; justify-content: center; align-items: center; height: 100%; color: var(--primary-color); font-weight: bold; }
+        .no-image, .loading { 
+            display: flex; justify-content: center; align-items: flex-start; 
+            height: 100%; padding-top: 20px; color: #999; font-style: italic; 
+            /* [FIX] 关键修复：让提示文字“穿透”鼠标事件 */
+            pointer-events: none; 
+        }
+        .loading { align-items: center; padding-top: 0; }
         
         @media (max-width: 768px) {
             .control-group { min-width: 100%; }
@@ -139,12 +139,9 @@
         </div>
 
         <div class="view-controls">
-            <!-- [改良] 新增清空按钮 -->
             <button id="clear-btn" data-i18n="clearAll">清空</button>
-
             <button id="side-by-side-btn" class="active" data-i18n="sideBySide">并排模式</button>
             <button id="overlap-btn" data-i18n="overlap">重叠模式</button>
-            
             <div class="language-selector">
                 <label for="language-select" data-i18n="languageLabel">语言:</label>
                 <select id="language-select">
@@ -153,7 +150,6 @@
                     <option value="ja">日本語</option>
                 </select>
             </div>
-
             <button id="reset-view-btn" data-i18n="resetView">重置视图</button>
         </div>
 
@@ -218,7 +214,7 @@
             const sideBySideMode = document.getElementById('side-by-side-mode'), overlapMode = document.getElementById('overlap-mode');
             const sideBySideBtn = document.getElementById('side-by-side-btn'), overlapBtn = document.getElementById('overlap-btn');
             const resetViewBtn = document.getElementById('reset-view-btn'), slider = document.getElementById('slider');
-            const clearBtn = document.getElementById('clear-btn'); // [改良] 获取清空按钮
+            const clearBtn = document.getElementById('clear-btn');
 
             function loadImage(imageElement, url, stateObj) {
                 const wrapper = imageElement.parentElement;
@@ -281,33 +277,21 @@
                 updateImageTransform();
             }
 
-            // [改良] 新增清空所有内容的函数
             function clearAll() {
-                // 清空图片1
-                image1Display.src = '';
-                image1Display.style.display = 'none';
-                image1Overlap.src = '';
-                imageState.image1.loaded = false;
-                wrapper1.querySelector('.no-image').style.display = 'flex';
-                document.getElementById('image1-url').value = '';
-                document.getElementById('image1-file').value = null;
-                const fileName1 = document.getElementById('file-name-1');
-                fileName1.textContent = translations[currentLang]['noFileChosen'];
-                fileName1.dataset.hasFile = 'false';
-
-                // 清空图片2
-                image2Display.src = '';
-                image2Display.style.display = 'none';
-                image2Overlap.src = '';
-                imageState.image2.loaded = false;
-                wrapper2.querySelector('.no-image').style.display = 'flex';
-                document.getElementById('image2-url').value = '';
-                document.getElementById('image2-file').value = null;
-                const fileName2 = document.getElementById('file-name-2');
-                fileName2.textContent = translations[currentLang]['noFileChosen'];
-                fileName2.dataset.hasFile = 'false';
-
-                // 重置视图状态
+                [
+                    { display: image1Display, overlap: image1Overlap, state: imageState.image1, wrapper: wrapper1, urlInput: 'image1-url', fileInput: 'image1-file', fileName: 'file-name-1' },
+                    { display: image2Display, overlap: image2Overlap, state: imageState.image2, wrapper: wrapper2, urlInput: 'image2-url', fileInput: 'image2-file', fileName: 'file-name-2' }
+                ].forEach(img => {
+                    img.display.src = ''; img.display.style.display = 'none';
+                    img.overlap.src = '';
+                    img.state.loaded = false;
+                    img.wrapper.querySelector('.no-image').style.display = 'flex';
+                    document.getElementById(img.urlInput).value = '';
+                    document.getElementById(img.fileInput).value = null;
+                    const fileNameDisplay = document.getElementById(img.fileName);
+                    fileNameDisplay.textContent = translations[currentLang]['noFileChosen'];
+                    fileNameDisplay.dataset.hasFile = 'false';
+                });
                 resetView();
             }
             
@@ -368,7 +352,7 @@
             
             function setupEventListeners() {
                 langSelect.addEventListener('change', function() { currentLang = this.value; applyLanguage(currentLang); });
-                clearBtn.addEventListener('click', clearAll); // [改良] 绑定清空事件
+                clearBtn.addEventListener('click', clearAll);
                 setupUrlLoader('image1-url', image1Display, imageState.image1);
                 setupUrlLoader('image2-url', image2Display, imageState.image2);
                 setupCustomFileUploader('custom-btn-1', 'image1-file', 'file-name-1', image1Display, imageState.image1);
