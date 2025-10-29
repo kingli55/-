@@ -203,7 +203,6 @@
                 mode: 'side-by-side', sliderPosition: 50
             };
 
-            // ... DOM element getters ...
             const langSelect = document.getElementById('language-select');
             const imageContainer = document.getElementById('image-container');
             const image1Display = document.getElementById('image1-display'), image2Display = document.getElementById('image2-display');
@@ -284,12 +283,9 @@
                     img.display.src = ''; img.display.style.display = 'none';
                     img.overlap.src = '';
                     img.state.loaded = false;
-                    
-                    // [FIX] 关键修复：重置提示文字内容
                     const noImageEl = img.wrapper.querySelector('.no-image');
                     noImageEl.textContent = translations[currentLang]['noImage'];
                     noImageEl.style.display = 'flex';
-                    
                     document.getElementById(img.urlInput).value = '';
                     document.getElementById(img.fileInput).value = null;
                     const fileNameDisplay = document.getElementById(img.fileName);
@@ -299,13 +295,13 @@
                 resetView();
             }
             
-            // ... setupUrlLoader, setupCustomFileUploader, setupDropArea ...
             function setupUrlLoader(inputId, imageElement, stateObj) {
                 const input = document.getElementById(inputId);
                 const load = () => { const url = input.value.trim(); if (url) loadImage(imageElement, url, stateObj); };
                 input.addEventListener('keydown', e => { if (e.key === 'Enter') load(); });
                 input.addEventListener('blur', load);
             }
+
             function setupCustomFileUploader(btnId, realInputId, fileNameId, imageElement, stateObj) {
                 const customBtn = document.getElementById(btnId);
                 const realInput = document.getElementById(realInputId);
@@ -322,6 +318,7 @@
                     }
                 });
             }
+
             function setupDropArea(dropTarget, imageElement, stateObj) {
                 dropTarget.addEventListener('dragover', e => { e.preventDefault(); dropTarget.classList.add('highlight'); });
                 dropTarget.addEventListener('dragleave', () => dropTarget.classList.remove('highlight'));
@@ -337,14 +334,37 @@
 
             function getPinchDistance(touches) { return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY); }
             
+            // [FIX] The final, definitive fix for synchronized zooming in all modes.
             function handleZoom(delta, centerX, centerY) {
-                const rect = imageContainer.getBoundingClientRect();
+                let baseRect;
+                let isSideBySide = imageState.mode === 'side-by-side';
+
+                if (isSideBySide) {
+                    const wrapper1Rect = wrapper1.getBoundingClientRect();
+                    // Determine which wrapper the cursor is over
+                    if (centerX >= wrapper1Rect.left && centerX <= wrapper1Rect.right) {
+                        baseRect = wrapper1Rect;
+                    } else {
+                        baseRect = wrapper2.getBoundingClientRect();
+                    }
+                } else { // Overlap mode
+                    baseRect = imageContainer.getBoundingClientRect();
+                }
+
+                // Calculate the offsets once, based on the correct coordinate system.
+                const offsetX = centerX - baseRect.left;
+                const offsetY = centerY - baseRect.top;
+
                 [imageState.image1, imageState.image2].forEach(state => {
                     if(state.loaded) {
                         const oldScale = state.scale;
                         const newScale = Math.max(0.1, oldScale * delta);
-                        const imageMouseX = centerX - rect.left - state.translateX;
-                        const imageMouseY = centerY - rect.top - state.translateY;
+                        
+                        // In side-by-side, the image's translation is relative to its own wrapper.
+                        // We use the calculated offset which is already relative to the correct wrapper.
+                        const imageMouseX = offsetX - state.translateX;
+                        const imageMouseY = offsetY - state.translateY;
+                        
                         state.translateX -= imageMouseX * (newScale / oldScale - 1);
                         state.translateY -= imageMouseY * (newScale / oldScale - 1);
                         state.scale = newScale;
