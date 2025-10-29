@@ -72,7 +72,6 @@
         .no-image, .loading { 
             display: flex; justify-content: center; align-items: flex-start; 
             height: 100%; padding-top: 20px; color: #999; font-style: italic; 
-            /* [FIX] 关键修复：让提示文字“穿透”鼠标事件 */
             pointer-events: none; 
         }
         .loading { align-items: center; padding-top: 0; }
@@ -154,7 +153,6 @@
         </div>
 
         <div class="image-container" id="image-container">
-            <!-- ... image display areas ... -->
             <div class="side-by-side-mode" id="side-by-side-mode">
                 <div class="image-wrapper" id="wrapper1">
                     <div class="no-image" data-i18n="noImage">未加载图片 / 拖放图片到这里</div>
@@ -205,6 +203,7 @@
                 mode: 'side-by-side', sliderPosition: 50
             };
 
+            // ... DOM element getters ...
             const langSelect = document.getElementById('language-select');
             const imageContainer = document.getElementById('image-container');
             const image1Display = document.getElementById('image1-display'), image2Display = document.getElementById('image2-display');
@@ -219,7 +218,7 @@
             function loadImage(imageElement, url, stateObj) {
                 const wrapper = imageElement.parentElement;
                 const noImageEl = wrapper.querySelector('.no-image');
-                if (noImageEl) { noImageEl.textContent = translations[currentLang]['loading']; noImageEl.style.display = 'flex'; }
+                if (noImageEl) { noImageEl.textContent = translations[currentLang]['loading']; }
                 imageElement.style.display = 'none';
 
                 const img = new Image();
@@ -285,7 +284,12 @@
                     img.display.src = ''; img.display.style.display = 'none';
                     img.overlap.src = '';
                     img.state.loaded = false;
-                    img.wrapper.querySelector('.no-image').style.display = 'flex';
+                    
+                    // [FIX] 关键修复：重置提示文字内容
+                    const noImageEl = img.wrapper.querySelector('.no-image');
+                    noImageEl.textContent = translations[currentLang]['noImage'];
+                    noImageEl.style.display = 'flex';
+                    
                     document.getElementById(img.urlInput).value = '';
                     document.getElementById(img.fileInput).value = null;
                     const fileNameDisplay = document.getElementById(img.fileName);
@@ -295,13 +299,13 @@
                 resetView();
             }
             
+            // ... setupUrlLoader, setupCustomFileUploader, setupDropArea ...
             function setupUrlLoader(inputId, imageElement, stateObj) {
                 const input = document.getElementById(inputId);
                 const load = () => { const url = input.value.trim(); if (url) loadImage(imageElement, url, stateObj); };
                 input.addEventListener('keydown', e => { if (e.key === 'Enter') load(); });
                 input.addEventListener('blur', load);
             }
-
             function setupCustomFileUploader(btnId, realInputId, fileNameId, imageElement, stateObj) {
                 const customBtn = document.getElementById(btnId);
                 const realInput = document.getElementById(realInputId);
@@ -318,7 +322,6 @@
                     }
                 });
             }
-
             function setupDropArea(dropTarget, imageElement, stateObj) {
                 dropTarget.addEventListener('dragover', e => { e.preventDefault(); dropTarget.classList.add('highlight'); });
                 dropTarget.addEventListener('dragleave', () => dropTarget.classList.remove('highlight'));
@@ -364,6 +367,7 @@
                 resetViewBtn.addEventListener('click', resetView);
                 imageContainer.addEventListener('dblclick', resetView);
 
+                // ... Mouse & Touch listeners ...
                 slider.addEventListener('mousedown', e => { isDraggingSlider = true; e.preventDefault(); e.stopPropagation(); });
                 imageContainer.addEventListener('mousedown', e => {
                     if (e.target === slider || slider.contains(e.target)) return;
